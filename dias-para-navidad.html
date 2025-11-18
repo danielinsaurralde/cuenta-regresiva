@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🎄 Cuenta Regresiva para Navidad</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        :root {
+            --primary-color: #28a745;
+            --secondary-color: #6c757d;
+            --bg-color: #f8f9fa;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; 
+            margin: 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .card-custom {
+            padding: 30px 20px;
+            border-radius: 15px;
+            max-width: 450px; 
+            width: 90%;
+        }
+
+        .countdown-main {
+            font-size: clamp(3rem, 8vw, 4.5rem); 
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-top: 15px;
+            line-height: 1.1;
+        }
+
+        .countdown-secondary {
+            font-size: clamp(1rem, 3vw, 1.5rem); 
+            color: var(--secondary-color);
+            margin-top: 5px;
+        }
+
+        .year-tag {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+        }
+
+        #gif {
+            max-width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin: 15px auto;
+        }
+
+        /* Estilos para el icono de configuración */
+        .settings-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.8rem;
+            color: var(--secondary-color);
+            cursor: pointer;
+            transition: color 0.2s ease-in-out;
+        }
+
+        .settings-icon:hover {
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <i class="fas fa-cog settings-icon" data-bs-toggle="modal" data-bs-target="#settingsModal"></i>
+
+    <div class="card card-custom shadow-lg">
+        <h1 id="title" class="mb-3 fs-3"></h1>
+        <img id="gif" class="d-none" alt="GIF navideño" loading="lazy" />
+        <div id="countdown-display"></div>
+        <div class="year-tag mt-3" id="yearTag"></div>
+    </div>
+
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="settingsModalLabel">Configuración de GIFs</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="gifSearchTerm" class="form-label">Término de búsqueda:</label>
+                        <input type="text" class="form-control" id="gifSearchTerm" value="christmas">
+                    </div>
+                    <div class="mb-3">
+                        <label for="gifLimit" class="form-label">Cantidad de GIFs a solicitar (límite 50):</label>
+                        <input type="number" class="form-control" id="gifLimit" min="1" max="50" value="50">
+                        <div class="form-text">Se seleccionará uno aleatoriamente de esta cantidad.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" id="saveGifSettings">Guardar cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Referencias a los elementos del DOM
+        const D_TITLE = document.getElementById("title");
+        const D_COUNTDOWN = document.getElementById("countdown-display");
+        const D_GIF = document.getElementById("gif");
+        const D_YEAR_TAG = document.getElementById("yearTag");
+        const D_GIF_SEARCH_TERM_INPUT = document.getElementById("gifSearchTerm");
+        // NUEVA REFERENCIA
+        const D_GIF_LIMIT_INPUT = document.getElementById("gifLimit");
+        const D_SAVE_GIF_SETTINGS_BUTTON = document.getElementById("saveGifSettings");
+
+        // Constantes para el cálculo de tiempo
+        const MS_IN_SECOND = 1000;
+        const MS_IN_MINUTE = MS_IN_SECOND * 60;
+        const MS_IN_HOUR = MS_IN_MINUTE * 60;
+        const MS_IN_DAY = MS_IN_HOUR * 24;
+
+        // Variables de configuración de GIFs (con localStorage y valores por defecto)
+        let gifSearchTerm = localStorage.getItem('gifSearchTerm') || "christmas";
+        // NUEVA VARIABLE
+        let gifLimit = parseInt(localStorage.getItem('gifLimit')) || 50;
+        
+        // Sincronizar con los inputs del modal
+        D_GIF_SEARCH_TERM_INPUT.value = gifSearchTerm;
+        D_GIF_LIMIT_INPUT.value = gifLimit;
+
+        /**
+         * Determina el año de la próxima Navidad.
+         */
+        function getNextChristmasDate(now) {
+            const currentYear = now.getFullYear();
+            // Si ya pasó el 25 de diciembre, la próxima Navidad es el próximo año.
+            const nextYear = (now.getMonth() === 11 && now.getDate() > 25) ? currentYear + 1 : currentYear;
+            // Retorna un objeto Date para el 25 de diciembre a las 00:00:00
+            return new Date(nextYear, 11, 25, 0, 0, 0);
+        }
+
+        /**
+         * Obtiene y muestra un GIF navideño de Tenor.
+         */
+        async function fetchChristmasGif() {
+            // Se usa el término (q) y el límite (limit) configurados
+            const URL = `https://g.tenor.com/v1/search?q=${gifSearchTerm}&key=LIVDSRZULELA&limit=${gifLimit}`;
+            
+            try {
+                const res = await fetch(URL);
+                if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+                
+                const data = await res.json();
+                
+                if (data?.results && data.results.length > 0) {
+                    // Seleccionar un GIF aleatoriamente de los resultados
+                    const randomIndex = Math.floor(Math.random() * data.results.length);
+                    const gifUrl = data.results[randomIndex].media[0].gif.url;
+
+                    if (gifUrl) {
+                        D_GIF.src = gifUrl;
+                        D_GIF.classList.remove('d-none'); // Mostrar el GIF
+                    } else {
+                        console.warn("No se encontró una URL de GIF válida en el resultado aleatorio.");
+                        D_GIF.classList.add('d-none');
+                    }
+                } else {
+                    console.warn("No se encontraron GIFs para el término de búsqueda:", gifSearchTerm);
+                    D_GIF.classList.add('d-none');
+                }
+            } catch (error) {
+                D_GIF.classList.add('d-none');
+                console.error("Error obteniendo el GIF:", error);
+            }
+        }
+
+        /**
+         * Actualiza el conteo regresivo y la visualización. (Sin cambios)
+         */
+        function updateCountdown() {
+            const now = new Date();
+            const christmasDate = getNextChristmasDate(now);
+            const year = christmasDate.getFullYear();
+            
+            D_YEAR_TAG.textContent = `Navidad ${year}`;
+
+            if (now.getMonth() === 11 && now.getDate() === 25) {
+                D_TITLE.textContent = "¡Hoy es Navidad! 🎁";
+                D_COUNTDOWN.innerHTML = "";
+                return;
+            }
+
+            D_TITLE.textContent = "¿Cuánto falta para Navidad?";
+            const diffMs = christmasDate.getTime() - now.getTime();
+            const days = Math.floor(diffMs / MS_IN_DAY);
+            const hours = Math.floor((diffMs % MS_IN_DAY) / MS_IN_HOUR);
+            const minutes = Math.floor((diffMs % MS_IN_HOUR) / MS_IN_MINUTE);
+            const seconds = Math.floor((diffMs % MS_IN_MINUTE) / MS_IN_SECOND);
+
+            let mainStr = "";
+            let secondaryStr = "";
+
+            if (days > 0) {
+                mainStr = `${days} día${days !== 1 ? 's' : ''}`;
+                secondaryStr = `${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+            } else if (hours > 0) {
+                mainStr = `${hours} hora${hours !== 1 ? 's' : ''}`;
+                secondaryStr = `${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+            } else if (minutes > 0) {
+                mainStr = `${minutes} minuto${minutes !== 1 ? 's' : ''}`;
+                secondaryStr = `${seconds.toString().padStart(2, '0')}s`;
+            } else {
+                mainStr = `${seconds} segundo${seconds !== 1 ? 's' : ''}`;
+            }
+            
+            D_COUNTDOWN.innerHTML = `
+                <div class="countdown-main">${mainStr}</div>
+                <div class="countdown-secondary">${secondaryStr}</div>
+            `;
+        }
+
+        // --- Event Listener para guardar configuración ---
+        D_SAVE_GIF_SETTINGS_BUTTON.addEventListener('click', () => {
+            // 1. Guardar y validar el término de búsqueda
+            let newSearchTerm = D_GIF_SEARCH_TERM_INPUT.value.trim();
+            gifSearchTerm = newSearchTerm === "" ? "christmas" : newSearchTerm;
+            D_GIF_SEARCH_TERM_INPUT.value = gifSearchTerm;
+            localStorage.setItem('gifSearchTerm', gifSearchTerm);
+
+            // 2. Guardar y validar el límite de GIFs
+            let newLimit = parseInt(D_GIF_LIMIT_INPUT.value, 10);
+            if (isNaN(newLimit) || newLimit < 1) newLimit = 1;
+            if (newLimit > 50) newLimit = 50; // Tenor tiene un límite máximo de 50
+            
+            gifLimit = newLimit;
+            D_GIF_LIMIT_INPUT.value = gifLimit;
+            localStorage.setItem('gifLimit', gifLimit);
+
+            // 3. Recargar y cerrar
+            fetchChristmasGif();
+            const settingsModal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+            if (settingsModal) settingsModal.hide();
+        });
+
+        // --- Inicialización y Bucle ---
+        fetchChristmasGif();
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    </script>
+</body>
+</html>
