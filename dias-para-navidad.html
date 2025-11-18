@@ -85,10 +85,20 @@
         .settings-icon:hover {
             color: var(--primary-color);
         }
+
+        /* Botón para actualizar GIF */
+        .refresh-gif-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+        }
     </style>
 </head>
 <body>
     <i class="fas fa-cog settings-icon" data-bs-toggle="modal" data-bs-target="#settingsModal"></i>
+    <button class="btn btn-outline-success refresh-gif-btn" id="refreshGifBtn" title="Actualizar GIF">
+        <i class="fas fa-sync-alt"></i> Actualizar GIF
+    </button>
 
     <div class="card card-custom shadow-lg">
         <h1 id="title" class="mb-3 fs-3"></h1>
@@ -114,6 +124,17 @@
                         <input type="number" class="form-control" id="gifLimit" min="1" max="50" value="50">
                         <div class="form-text">Se seleccionará uno aleatoriamente de esta cantidad.</div>
                     </div>
+
+                    <div class="mb-3" id="refreshIntervalGroup">
+                        <label class="form-check-label" for="gifAutoRefresh">Actualizar GIF automáticamente (límite 3600 segundos)</label>
+                        <div class="input-group">
+                            <div class="input-group-text">
+                                <input class="form-check-input mt-0" type="checkbox" id="gifAutoRefresh" checked>
+                            </div>
+                            <input type="number" class="form-control" id="gifRefreshInterval" min="1" max="3600" value="60">
+                        </div>
+                        <div class="form-text">El GIF se actualizará según los segundos configurados.</div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -131,9 +152,12 @@
         const D_GIF = document.getElementById("gif");
         const D_YEAR_TAG = document.getElementById("yearTag");
         const D_GIF_SEARCH_TERM_INPUT = document.getElementById("gifSearchTerm");
-        // NUEVA REFERENCIA
         const D_GIF_LIMIT_INPUT = document.getElementById("gifLimit");
+        const D_GIF_AUTO_REFRESH = document.getElementById("gifAutoRefresh");
+        const D_GIF_REFRESH_INTERVAL = document.getElementById("gifRefreshInterval");
+        const D_REFRESH_INTERVAL_GROUP = document.getElementById("refreshIntervalGroup");
         const D_SAVE_GIF_SETTINGS_BUTTON = document.getElementById("saveGifSettings");
+        const D_REFRESH_GIF_BTN = document.getElementById("refreshGifBtn");
 
         // Constantes para el cálculo de tiempo
         const MS_IN_SECOND = 1000;
@@ -143,12 +167,45 @@
 
         // Variables de configuración de GIFs (con localStorage y valores por defecto)
         let gifSearchTerm = localStorage.getItem('gifSearchTerm') || "christmas";
-        // NUEVA VARIABLE
         let gifLimit = parseInt(localStorage.getItem('gifLimit')) || 50;
+        let gifAutoRefresh = localStorage.getItem('gifAutoRefresh') !== 'false'; // Por defecto true
+        let gifRefreshInterval = parseInt(localStorage.getItem('gifRefreshInterval')) || 60; // En minutos
+        let gifIntervalId = null;
         
         // Sincronizar con los inputs del modal
         D_GIF_SEARCH_TERM_INPUT.value = gifSearchTerm;
         D_GIF_LIMIT_INPUT.value = gifLimit;
+        D_GIF_AUTO_REFRESH.checked = gifAutoRefresh;
+        D_GIF_REFRESH_INTERVAL.value = gifRefreshInterval;
+
+        // Función para habilitar/deshabilitar el campo de intervalo
+        function toggleRefreshIntervalField() {
+            D_REFRESH_INTERVAL_GROUP.style.opacity = D_GIF_AUTO_REFRESH.checked ? '1' : '0.5';
+            D_GIF_REFRESH_INTERVAL.disabled = !D_GIF_AUTO_REFRESH.checked;
+        }
+
+        // Inicializar el estado del campo
+        toggleRefreshIntervalField();
+
+        // Event listener para el checkbox
+        D_GIF_AUTO_REFRESH.addEventListener('change', toggleRefreshIntervalField);
+
+        /**
+         * Configura el intervalo automático de actualización de GIF
+         */
+        function setupGifAutoRefresh() {
+            // Limpiar cualquier intervalo existente
+            if (gifIntervalId) {
+                clearInterval(gifIntervalId);
+                gifIntervalId = null;
+            }
+
+            // Si está activado, crear nuevo intervalo
+            if (gifAutoRefresh) {
+                const intervalMs = gifRefreshInterval * 1000; // Convertir segundos a milisegundos
+                gifIntervalId = setInterval(fetchChristmasGif, intervalMs);
+            }
+        }
 
         /**
          * Determina el año de la próxima Navidad.
@@ -252,20 +309,42 @@
             // 2. Guardar y validar el límite de GIFs
             let newLimit = parseInt(D_GIF_LIMIT_INPUT.value, 10);
             if (isNaN(newLimit) || newLimit < 1) newLimit = 1;
-            if (newLimit > 50) newLimit = 50; // Tenor tiene un límite máximo de 50
+            if (newLimit > 50) newLimit = 50;
             
             gifLimit = newLimit;
             D_GIF_LIMIT_INPUT.value = gifLimit;
             localStorage.setItem('gifLimit', gifLimit);
 
-            // 3. Recargar y cerrar
+            // 3. Guardar configuración de actualización automática
+            gifAutoRefresh = D_GIF_AUTO_REFRESH.checked;
+            localStorage.setItem('gifAutoRefresh', gifAutoRefresh);
+
+            // 4. Guardar y validar intervalo de actualización
+            let newInterval = parseInt(D_GIF_REFRESH_INTERVAL.value, 10);
+            if (isNaN(newInterval) || newInterval < 1) newInterval = 1;
+            if (newInterval > 3600) newInterval = 3600;
+            
+            gifRefreshInterval = newInterval;
+            D_GIF_REFRESH_INTERVAL.value = gifRefreshInterval;
+            localStorage.setItem('gifRefreshInterval', gifRefreshInterval);
+
+            // 5. Reiniciar el intervalo automático
+            setupGifAutoRefresh();
+
+            // 6. Recargar y cerrar
             fetchChristmasGif();
             const settingsModal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
             if (settingsModal) settingsModal.hide();
         });
 
+        // --- Event Listener para el botón de actualizar GIF ---
+        D_REFRESH_GIF_BTN.addEventListener('click', () => {
+            fetchChristmasGif();
+        });
+
         // --- Inicialización y Bucle ---
         fetchChristmasGif();
+        setupGifAutoRefresh();
         updateCountdown();
         setInterval(updateCountdown, 1000);
     </script>
