@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🎆 Cuenta Regresiva para Año Nuevo | ¿Cuánto falta? 🥂</title>
+
+    <meta name="description" content="Descubre cuánto tiempo exacto falta para Año Nuevo. Contador actualizado al segundo con GIFs personalizables. ¡Empieza la cuenta regresiva!" />
+    <meta name="keywords" content="cuenta regresiva, año nuevo, new year countdown, 1 de enero, cuánto falta, tiempo restante, fiestas" />
+    <meta name="author" content="Cuenta Regresiva para Año Nuevo" />
+    
+    <meta name="robots" content="index, follow" /> 
+
+    <meta property="og:title" content="Cuenta Regresiva para Año Nuevo" />
+    <meta property="og:description" content="Descubre cuánto tiempo exacto falta para Año Nuevo. Contador actualizado al segundo con GIFs personalizables. ¡Empieza la cuenta regresiva!" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://sedamadev.com.py/cuenta-regresiva/dias-para-ano-nuevo" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        :root {
+            --primary-color: #d4af37;
+            --secondary-color: #6c757d;
+            --bg-color: #f8f9fa;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; 
+            margin: 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .card-custom {
+            padding: 30px 20px;
+            border-radius: 15px;
+            max-width: 450px; 
+            width: 90%;
+        }
+
+        .countdown-main {
+            font-size: clamp(3rem, 8vw, 4.5rem); 
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-top: 15px;
+            line-height: 1.1;
+        }
+
+        .countdown-secondary {
+            font-size: clamp(1rem, 3vw, 1.5rem); 
+            color: var(--secondary-color);
+            margin-top: 5px;
+        }
+
+        .year-tag {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+        }
+
+        #gif {
+            max-width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin: 15px auto;
+        }
+
+        /* Estilos para el icono de configuración */
+        .settings-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.8rem;
+            color: var(--secondary-color);
+            cursor: pointer;
+            transition: color 0.2s ease-in-out;
+        }
+
+        .settings-icon:hover {
+            color: var(--primary-color);
+        }
+
+        /* Botón para actualizar GIF */
+        .refresh-gif-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+        }
+    </style>
+</head>
+<body>
+    <i class="fas fa-cog settings-icon" data-bs-toggle="modal" data-bs-target="#settingsModal"></i>
+    <button class="btn btn-outline-success refresh-gif-btn" id="refreshGifBtn" title="Actualizar GIF">
+        <i class="fas fa-sync-alt"></i> Actualizar GIF
+    </button>
+
+    <div class="card card-custom shadow-lg">
+        <h1 id="title" class="mb-3 fs-3"></h1>
+        <img id="gif" class="d-none" alt="GIF Año Nuevo" loading="lazy" />
+        <div id="countdown-display"></div>
+        <div class="year-tag mt-3" id="yearTag"></div>
+    </div>
+
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="settingsModalLabel">Configuración de GIFs</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="gifSearchTerm" class="form-label">Término de búsqueda:</label>
+                        <input type="text" class="form-control" id="gifSearchTerm" value="new year">
+                    </div>
+                    <div class="mb-3">
+                        <label for="gifLimit" class="form-label">Cantidad de GIFs a solicitar (límite 50):</label>
+                        <input type="number" class="form-control" id="gifLimit" min="1" max="50" value="50">
+                        <div class="form-text">Se seleccionará uno aleatoriamente de esta cantidad.</div>
+                    </div>
+
+                    <div class="mb-3" id="refreshIntervalGroup">
+                        <label class="form-check-label" for="gifAutoRefresh">Actualizar GIF automáticamente (límite 3600 segundos)</label>
+                        <div class="input-group">
+                            <div class="input-group-text">
+                                <input class="form-check-input mt-0" type="checkbox" id="gifAutoRefresh" checked>
+                            </div>
+                            <input type="number" class="form-control" id="gifRefreshInterval" min="1" max="3600" value="60">
+                        </div>
+                        <div class="form-text">El GIF se actualizará según los segundos configurados.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" id="saveGifSettings">Guardar cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Referencias a los elementos del DOM
+        const D_TITLE = document.getElementById("title");
+        const D_COUNTDOWN = document.getElementById("countdown-display");
+        const D_GIF = document.getElementById("gif");
+        const D_YEAR_TAG = document.getElementById("yearTag");
+        const D_GIF_SEARCH_TERM_INPUT = document.getElementById("gifSearchTerm");
+        const D_GIF_LIMIT_INPUT = document.getElementById("gifLimit");
+        const D_GIF_AUTO_REFRESH = document.getElementById("gifAutoRefresh");
+        const D_GIF_REFRESH_INTERVAL = document.getElementById("gifRefreshInterval");
+        const D_REFRESH_INTERVAL_GROUP = document.getElementById("refreshIntervalGroup");
+        const D_SAVE_GIF_SETTINGS_BUTTON = document.getElementById("saveGifSettings");
+        const D_REFRESH_GIF_BTN = document.getElementById("refreshGifBtn");
+
+        // Constantes para el cálculo de tiempo
+        const MS_IN_SECOND = 1000;
+        const MS_IN_MINUTE = MS_IN_SECOND * 60;
+        const MS_IN_HOUR = MS_IN_MINUTE * 60;
+        const MS_IN_DAY = MS_IN_HOUR * 24;
+
+        // Variables de configuración de GIFs (con localStorage y valores por defecto)
+        let gifSearchTerm = localStorage.getItem('gifSearchTermNewYear') || "new year";
+        let gifLimit = parseInt(localStorage.getItem('gifLimitNewYear')) || 50;
+        let gifAutoRefresh = localStorage.getItem('gifAutoRefreshNewYear') !== 'false'; // Por defecto true
+        let gifRefreshInterval = parseInt(localStorage.getItem('gifRefreshIntervalNewYear')) || 60; // En minutos
+        let gifIntervalId = null;
+        
+        // Sincronizar con los inputs del modal
+        D_GIF_SEARCH_TERM_INPUT.value = gifSearchTerm;
+        D_GIF_LIMIT_INPUT.value = gifLimit;
+        D_GIF_AUTO_REFRESH.checked = gifAutoRefresh;
+        D_GIF_REFRESH_INTERVAL.value = gifRefreshInterval;
+
+        // Función para habilitar/deshabilitar el campo de intervalo
+        function toggleRefreshIntervalField() {
+            D_REFRESH_INTERVAL_GROUP.style.opacity = D_GIF_AUTO_REFRESH.checked ? '1' : '0.5';
+            D_GIF_REFRESH_INTERVAL.disabled = !D_GIF_AUTO_REFRESH.checked;
+        }
+
+        // Inicializar el estado del campo
+        toggleRefreshIntervalField();
+
+        // Event listener para el checkbox
+        D_GIF_AUTO_REFRESH.addEventListener('change', toggleRefreshIntervalField);
+
+        /**
+         * Configura el intervalo automático de actualización de GIF
+         */
+        function setupGifAutoRefresh() {
+            // Limpiar cualquier intervalo existente
+            if (gifIntervalId) {
+                clearInterval(gifIntervalId);
+                gifIntervalId = null;
+            }
+
+            // Si está activado, crear nuevo intervalo
+            if (gifAutoRefresh) {
+                const intervalMs = gifRefreshInterval * 1000; // Convertir segundos a milisegundos
+                gifIntervalId = setInterval(fetchGif, intervalMs);
+            }
+        }
+
+        /**
+         * Determina el próximo año nuevo.
+         */
+        function getNextDate(now) {
+            const currentYear = now.getFullYear();
+            // Se calcula el próximo año nuevo.
+            return new Date(currentYear + 1, 0, 1, 0, 0, 0);
+        }
+
+        /**
+         * Obtiene y muestra un GIF navideño de Tenor.
+         */
+        async function fetchGif() {
+            // Se usa el término (q) y el límite (limit) configurados
+            const URL = `https://g.tenor.com/v1/search?q=${gifSearchTerm}&key=LIVDSRZULELA&limit=${gifLimit}`;
+            
+            try {
+                const res = await fetch(URL);
+                if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+                
+                const data = await res.json();
+                
+                if (data?.results && data.results.length > 0) {
+                    // Seleccionar un GIF aleatoriamente de los resultados
+                    const randomIndex = Math.floor(Math.random() * data.results.length);
+                    const gifUrl = data.results[randomIndex].media[0].gif.url;
+
+                    if (gifUrl) {
+                        D_GIF.src = gifUrl;
+                        D_GIF.classList.remove('d-none'); // Mostrar el GIF
+                    } else {
+                        console.warn("No se encontró una URL de GIF válida en el resultado aleatorio.");
+                        D_GIF.classList.add('d-none');
+                    }
+                } else {
+                    console.warn("No se encontraron GIFs para el término de búsqueda:", gifSearchTerm);
+                    D_GIF.classList.add('d-none');
+                }
+            } catch (error) {
+                D_GIF.classList.add('d-none');
+                console.error("Error obteniendo el GIF:", error);
+            }
+        }
+
+        /**
+         * Actualiza el conteo regresivo y la visualización. (Sin cambios)
+         */
+        function updateCountdown() {
+            const now = new Date();
+            const date = getNextDate(now);
+            const year = date.getFullYear();
+            
+            D_YEAR_TAG.textContent = `Año Nuevo ${year}`;
+
+            if (now.getMonth() === 0 && now.getDate() === 1) {
+                D_TITLE.textContent = "¡Feliz Año Nuevo! 🎆";
+                D_COUNTDOWN.innerHTML = "";
+                return;
+            }
+
+            D_TITLE.textContent = "¿Cuánto falta para Año Nuevo?";
+            const diffMs = date.getTime() - now.getTime();
+            const days = Math.floor(diffMs / MS_IN_DAY);
+            const hours = Math.floor((diffMs % MS_IN_DAY) / MS_IN_HOUR);
+            const minutes = Math.floor((diffMs % MS_IN_HOUR) / MS_IN_MINUTE);
+            const seconds = Math.floor((diffMs % MS_IN_MINUTE) / MS_IN_SECOND);
+
+            let mainStr = "";
+            let secondaryStr = "";
+
+            if (days > 0) {
+                mainStr = `${days} día${days !== 1 ? 's' : ''}`;
+                secondaryStr = `${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+            } else if (hours > 0) {
+                mainStr = `${hours} hora${hours !== 1 ? 's' : ''}`;
+                secondaryStr = `${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+            } else if (minutes > 0) {
+                mainStr = `${minutes} minuto${minutes !== 1 ? 's' : ''}`;
+                secondaryStr = `${seconds.toString().padStart(2, '0')}s`;
+            } else {
+                mainStr = `${seconds} segundo${seconds !== 1 ? 's' : ''}`;
+            }
+            
+            D_COUNTDOWN.innerHTML = `
+                <div class="countdown-main">${mainStr}</div>
+                <div class="countdown-secondary">${secondaryStr}</div>
+            `;
+        }
+
+        // --- Event Listener para guardar configuración ---
+        D_SAVE_GIF_SETTINGS_BUTTON.addEventListener('click', () => {
+            // 1. Guardar y validar el término de búsqueda
+            let newSearchTerm = D_GIF_SEARCH_TERM_INPUT.value.trim();
+            gifSearchTerm = newSearchTerm === "" ? "new year" : newSearchTerm;
+            D_GIF_SEARCH_TERM_INPUT.value = gifSearchTerm;
+            localStorage.setItem('gifSearchTermNewYear', gifSearchTerm);
+
+            // 2. Guardar y validar el límite de GIFs
+            let newLimit = parseInt(D_GIF_LIMIT_INPUT.value, 10);
+            if (isNaN(newLimit) || newLimit < 1) newLimit = 1;
+            if (newLimit > 50) newLimit = 50;
+            
+            gifLimit = newLimit;
+            D_GIF_LIMIT_INPUT.value = gifLimit;
+            localStorage.setItem('gifLimitNewYear', gifLimit);
+
+            // 3. Guardar configuración de actualización automática
+            gifAutoRefresh = D_GIF_AUTO_REFRESH.checked;
+            localStorage.setItem('gifAutoRefreshNewYear', gifAutoRefresh);
+
+            // 4. Guardar y validar intervalo de actualización
+            let newInterval = parseInt(D_GIF_REFRESH_INTERVAL.value, 10);
+            if (isNaN(newInterval) || newInterval < 1) newInterval = 1;
+            if (newInterval > 3600) newInterval = 3600;
+            
+            gifRefreshInterval = newInterval;
+            D_GIF_REFRESH_INTERVAL.value = gifRefreshInterval;
+            localStorage.setItem('gifRefreshIntervalNewYear', gifRefreshInterval);
+
+            // 5. Reiniciar el intervalo automático
+            setupGifAutoRefresh();
+
+            // 6. Recargar y cerrar
+            fetchGif();
+            const settingsModal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+            if (settingsModal) settingsModal.hide();
+        });
+
+        // --- Event Listener para el botón de actualizar GIF ---
+        D_REFRESH_GIF_BTN.addEventListener('click', () => {
+            fetchGif();
+        });
+
+        // --- Inicialización y Bucle ---
+        fetchGif();
+        setupGifAutoRefresh();
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    </script>
+</body>
+</html>
