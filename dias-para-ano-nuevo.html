@@ -212,8 +212,11 @@
          */
         function getNextDate(now) {
             const currentYear = now.getFullYear();
-            // Se calcula el próximo año nuevo.
-            return new Date(currentYear + 1, 0, 1, 0, 0, 0);
+            // Si es el 1 de enero, mostrar el año actual, sino mostrar siguiente año.
+            const nextYear = (now.getMonth() === 0 && now.getDate() === 1) ? currentYear : currentYear + 1;
+            // Retorna un objeto Date para el 1 de enero a las 00:00:00
+            return new Date(nextYear, 0, 1, 0, 0, 0);
+            
         }
 
         /**
